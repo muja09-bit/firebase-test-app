@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GitHub Pages + Firebase Realtime Data</title>
+</head>
+<body>
+
+    <h1>Real-Time Data Display:</h1>
+    <p>Current Message: <strong id="realtime-data">Loading...</strong></p>
+
+    <hr>
+
+    <h2>Update the Message:</h2>
+    <input type="text" id="new-message-input" placeholder="Type a new message">
+    <button onclick="updateData()">Save to Database</button>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // 1. Initialize Firebase (PASTE YOUR CONFIG HERE)
+        const firebaseConfig = {
+  apiKey: "AIzaSyAN6Ao-5Cwr7Dx5uTXE0N_DLQROwgB_0hE",
+  authDomain: "test-f7c0f.firebaseapp.com",
+  databaseURL: "https://test-default-rtdb.firebaseio.com",
+  projectId: "test-f7c0f",
+  storageBucket: "test-f7c0f.firebasestorage.app",
+  messagingSenderId: "267559731634",
+  appId: "1:267559731634:web:5d27671f8a5109476324ab"
+};; 
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Get a reference to the database service
+        const database = firebase.database();
+        
+        // Reference to the specific data path (we'll call it 'message')
+        const messageRef = database.ref('simple_message_key');
+
+        // 2. Real-Time Listener (Read Data)
+        // This function runs every time the data in the database changes
+        messageRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            const messageElement = document.getElementById('realtime-data');
+            
+            if (data && data.text) {
+                messageElement.textContent = data.text;
+            } else {
+                messageElement.textContent = 'No message set yet!';
+            }
+        });
+
+        // 3. Function to Write Data
+        function updateData() {
+            const input = document.getElementById('new-message-input');
+            const newMessage = input.value.trim();
+
+            if (newMessage) {
+                // Set the data under the 'simple_message_key'
+                messageRef.set({
+                    text: newMessage,
+                    timestamp: new Date().toString() // optional timestamp
+                })
+                .then(() => {
+                    console.log("Data successfully saved!");
+                    input.value = ''; // Clear input on success
+                })
+                .catch((error) => {
+                    console.error("Data saving failed: ", error);
+                    alert("Failed to save data!");
+                });
+            } else {
+                alert("Please enter a message.");
+            }
+        }
+    </script>
+
+</body>
+</html>
