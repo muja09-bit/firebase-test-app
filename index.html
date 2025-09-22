@@ -1,76 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>GitHub Pages + Firebase Realtime Data</title>
+  <meta charset="UTF-8">
+  <title>GitHub Pages + Firebase Realtime Data</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    #messages { border: 1px solid #ccc; padding: 1rem; min-height: 100px; margin-bottom: 1rem; }
+    .msg { padding: .3rem 0; border-bottom: 1px solid #eee; }
+    input, button { padding: .5rem; margin: .2rem 0; }
+  </style>
 </head>
 <body>
 
-    <h1>Real-Time Data Display:</h1>
-    <div id="messages">Loading...</div>
+  <h1>Realtime Messages (Firebase)</h1>
 
-    <hr>
+  <div id="messages">Loading...</div>
 
-    <h2>Update the Message:</h2>
-    <input type="text" id="new-message-input" placeholder="Type a new message">
-    <button onclick="updateData()">Save to Database</button>
+  <h2>Add a Message</h2>
+  <input type="text" id="new-message-input" placeholder="Type a new message">
+  <button onclick="updateData()">Save to Database</button>
 
-    <!-- Firebase v8 (compatible with your code) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <!-- Firebase v8 SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-    <script>
-        // 1. Initialize Firebase (your config)
-        const firebaseConfig = {
-            apiKey: "AIzaSyAN6Ao-5Cwr7Dx5uTXE0N_DLQROwgB_0hE",
-            authDomain: "test-f7c0f.firebaseapp.com",
-            databaseURL: "https://test-f7c0f-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "test-f7c0f",
-            storageBucket: "test-f7c0f.appspot.com",
-            messagingSenderId: "267559731634",
-            appId: "1:267559731634:web:5d27671f8a5109476324ab"
-        };
+  <script>
+    // 1. Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAN6Ao-5Cwr7Dx5uTXE0N_DLQROwgB_0hE",
+      authDomain: "test-f7c0f.firebaseapp.com",
+      databaseURL: "https://test-f7c0f-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "test-f7c0f",
+      storageBucket: "test-f7c0f.appspot.com",
+      messagingSenderId: "267559731634",
+      appId: "1:267559731634:web:5d27671f8a5109476324ab"
+    };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
 
-        // Get a reference to the database
-        const database = firebase.database();
-        const messagesRef = database.ref('messages'); // store under /messages
+    // 2. Database reference
+    const database = firebase.database();
+    const messagesRef = database.ref('messages');
 
-        // 2. Real-Time Listener (Read Data)
-        messagesRef.on('child_added', (snapshot) => {
-            const data = snapshot.val();
-            const messagesEl = document.getElementById('messages');
+    const messagesEl = document.getElementById('messages');
 
-            const div = document.createElement('div');
-            div.textContent = data.text + " (" + data.timestamp + ")";
-            messagesEl.appendChild(div);
+    // 3. Real-time listener
+    messagesRef.on('child_added', (snapshot) => {
+      const data = snapshot.val();
+      const div = document.createElement('div');
+      div.className = "msg";
+      div.textContent = `${data.text} (${data.timestamp})`;
+      messagesEl.appendChild(div);
+    });
+
+    // 4. Write data
+    function updateData() {
+      const input = document.getElementById('new-message-input');
+      const newMessage = input.value.trim();
+
+      if (newMessage) {
+        messagesRef.push({
+          text: newMessage,
+          timestamp: new Date().toLocaleString()
+        })
+        .then(() => {
+          console.log("Data saved successfully!");
+          input.value = ''; // clear input
+        })
+        .catch((error) => {
+          console.error("Save failed: ", error);
+          alert("Failed to save data!");
         });
-
-        // 3. Function to Write Data
-        function updateData() {
-            const input = document.getElementById('new-message-input');
-            const newMessage = input.value.trim();
-
-            if (newMessage) {
-                messagesRef.push({
-                    text: newMessage,
-                    timestamp: new Date().toLocaleString()
-                })
-                .then(() => {
-                    console.log("Data successfully saved!");
-                    input.value = '';
-                })
-                .catch((error) => {
-                    console.error("Data saving failed: ", error);
-                    alert("Failed to save data!");
-                });
-            } else {
-                alert("Please enter a message.");
-            }
-        }
-    </script>
-
+      } else {
+        alert("Please enter a message.");
+      }
+    }
+  </script>
 </body>
 </html>
 
