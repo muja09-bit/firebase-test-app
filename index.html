@@ -1,129 +1,147 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Realtime Messages CRUD (Firebase)</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; }
-    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-    th, td { border: 1px solid #ccc; padding: .5rem; text-align: left; }
-    input, button { padding: .4rem .6rem; margin: .2rem; }
-    button { cursor: pointer; }
-    .action-btn { margin-right: .3rem; }
-  </style>
+    <title>Realtime Messages (Firebase)</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background: #f4f4f4;
+        }
+        button {
+            margin: 0 2px;
+            padding: 4px 8px;
+        }
+    </style>
 </head>
 <body>
 
-  <h1>Realtime Messages (Firebase CRUD)</h1>
+    <h1>Realtime Messages (Firebase)</h1>
 
-  <h2>Add a Message</h2>
-  <input type="text" id="new-message-input" placeholder="Type a new message">
-  <button onclick="addMessage()">Save to Database</button>
+    <table id="messages-table">
+        <thead>
+            <tr>
+                <th>Message</th>
+                <th>Timestamp</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="messages-body">
+            <tr><td colspan="3">Loading...</td></tr>
+        </tbody>
+    </table>
 
-  <h2>Messages Table</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Text</th>
-        <th>Timestamp</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="messagesTable"></tbody>
-  </table>
+    <h2>Add a Message</h2>
+    <input type="text" id="new-message-input" placeholder="Type a new message">
+    <button onclick="updateData()">Save to Database</button>
 
-  <!-- Firebase v8 SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Firebase v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-  <script>
-    // 1. Initialize Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyAN6Ao-5Cwr7Dx5uTXE0N_DLQROwgB_0hE",
-      authDomain: "test-f7c0f.firebaseapp.com",
-      databaseURL: "https://test-f7c0f-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "test-f7c0f",
-      storageBucket: "test-f7c0f.appspot.com",
-      messagingSenderId: "267559731634",
-      appId: "1:267559731634:web:5d27671f8a5109476324ab"
-    };
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAN6Ao-5Cwr7Dx5uTXE0N_DLQROwgB_0hE",
+            authDomain: "test-f7c0f.firebaseapp.com",
+            databaseURL: "https://test-f7c0f-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "test-f7c0f",
+            storageBucket: "test-f7c0f.appspot.com",
+            messagingSenderId: "267559731634",
+            appId: "1:267559731634:web:5d27671f8a5109476324ab"
+        };
 
-    firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const messagesRef = database.ref('messages');
 
-    const database = firebase.database();
-    const messagesRef = database.ref('messages');
-    const tableBody = document.getElementById('messagesTable');
+        const messagesBody = document.getElementById('messages-body');
 
-    // 2. Load Data Realtime
-    messagesRef.on('child_added', (snapshot) => {
-      renderRow(snapshot.key, snapshot.val());
-    });
+        // Render table rows
+        function renderRow(key, data) {
+            const row = document.createElement('tr');
+            row.setAttribute('id', key);
 
-    messagesRef.on('child_changed', (snapshot) => {
-      document.getElementById("row-" + snapshot.key).innerHTML = rowHTML(snapshot.key, snapshot.val());
-    });
+            row.innerHTML = `
+                <td>${data.text}</td>
+                <td>${data.timestamp}</td>
+                <td>
+                    <button onclick="editMessage('${key}', '${data.text}')">Edit</button>
+                    <button onclick="deleteMessage('${key}')">Delete</button>
+                </td>
+            `;
+            return row;
+        }
 
-    messagesRef.on('child_removed', (snapshot) => {
-      const row = document.getElementById("row-" + snapshot.key);
-      if (row) row.remove();
-    });
+        // Listen for added rows
+        messagesRef.on('child_added', (snapshot) => {
+            const data = snapshot.val();
+            const key = snapshot.key;
 
-    // 3. Add Message
-    function addMessage() {
-      const input = document.getElementById('new-message-input');
-      const text = input.value.trim();
-
-      if (text) {
-        messagesRef.push({
-          text: text,
-          timestamp: new Date().toLocaleString()
+            if (messagesBody.querySelector("td[colspan]")) {
+                messagesBody.innerHTML = ""; // clear "Loading..."
+            }
+            messagesBody.appendChild(renderRow(key, data));
         });
-        input.value = '';
-      } else {
-        alert("Please enter a message.");
-      }
-    }
 
-    // 4. Edit Message
-    function editMessage(id, oldText) {
-      const newText = prompt("Edit your message:", oldText);
-      if (newText && newText.trim() !== "") {
-        messagesRef.child(id).update({
-          text: newText,
-          timestamp: new Date().toLocaleString()
+        // Listen for updated rows
+        messagesRef.on('child_changed', (snapshot) => {
+            const data = snapshot.val();
+            const key = snapshot.key;
+            const row = document.getElementById(key);
+            if (row) {
+                row.replaceWith(renderRow(key, data));
+            }
         });
-      }
-    }
 
-    // 5. Delete Message
-    function deleteMessage(id) {
-      if (confirm("Are you sure you want to delete this message?")) {
-        messagesRef.child(id).remove();
-      }
-    }
+        // Listen for removed rows
+        messagesRef.on('child_removed', (snapshot) => {
+            const key = snapshot.key;
+            const row = document.getElementById(key);
+            if (row) row.remove();
+        });
 
-    // Helper: Row HTML
-    function rowHTML(id, data) {
-      return `
-        <td>${id}</td>
-        <td>${data.text}</td>
-        <td>${data.timestamp}</td>
-        <td>
-          <button class="action-btn" onclick="editMessage('${id}', '${data.text.replace(/'/g, "\\'")}')">Edit</button>
-          <button class="action-btn" onclick="deleteMessage('${id}')">Delete</button>
-        </td>
-      `;
-    }
+        // Add message
+        function updateData() {
+            const input = document.getElementById('new-message-input');
+            const newMessage = input.value.trim();
 
-    // Helper: Render Row
-    function renderRow(id, data) {
-      const row = document.createElement("tr");
-      row.id = "row-" + id;
-      row.innerHTML = rowHTML(id, data);
-      tableBody.appendChild(row);
-    }
-  </script>
+            if (newMessage) {
+                messagesRef.push({
+                    text: newMessage,
+                    timestamp: new Date().toLocaleString()
+                });
+                input.value = '';
+            } else {
+                alert("Please enter a message.");
+            }
+        }
+
+        // Edit message
+        function editMessage(key, oldText) {
+            const newText = prompt("Edit your message:", oldText);
+            if (newText && newText.trim() !== "") {
+                messagesRef.child(key).update({
+                    text: newText,
+                    timestamp: new Date().toLocaleString()
+                });
+            }
+        }
+
+        // Delete message
+        function deleteMessage(key) {
+            if (confirm("Are you sure you want to delete this message?")) {
+                messagesRef.child(key).remove();
+            }
+        }
+    </script>
+
 </body>
 </html>
 
