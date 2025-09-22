@@ -42,6 +42,16 @@
     <input type="text" id="new-message-input" placeholder="Type a new message">
     <button onclick="updateData()">Save to Database</button>
 
+    <!-- New Button -->
+<button onclick="goToNewPage()">Go to New Page</button>
+
+<script>
+    function goToNewPage() {
+        // Terus pergi ke page baru kosong (newpage.html)
+        window.location.href = "newpage.html";
+    }
+</script>
+
     <!-- Firebase v8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -144,6 +154,7 @@
 
 </body>
 </html>
+
 
 
 
